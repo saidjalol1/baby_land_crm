@@ -1,0 +1,289 @@
+{% extends 'wrapper.html' %}
+{% block title %}Sotuv{% endblock title %}
+{% block content %}
+<style>
+  table{
+    overflow: auto;
+  }
+  tr:hover {
+    background-color: rgb(194, 190, 190);
+  }
+</style>
+<div class="pagetitle">
+    <h1>Sotuv</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item active">Sotilganlar</li>
+      </ol>
+    </nav>
+    <div class="d-felx justify-content-center align-items-center flex-column">
+      <form method="POST" class="d-flex gap-2 justify-content-center align-items-center flex-column flex-lg-row justify-content-lg-start">
+        {% csrf_token %}
+       <div class="from">
+        <input name="from" type="date" id="from" style="border-radius: 3px;margin-top:10px;outline:none;border:none;padding:10px 10px;">
+       </div>
+        <div for="from">Dan - Gacha</div>
+        <div class="till">
+          <input name="till" type="date" id="from" style="border-radius: 3px;margin-top:10px;outline:none;border:none;padding:10px 10px;">
+        </div>
+        <div class="button pt-2">
+          <button class="btn btn-primary" name="filtr" style="margin-left: 10px;">filtrlash</button>
+        </div>
+      </form>
+    </div>
+  </div><!-- End Page Title -->
+  <div class="d-flex justify-content-between align-items-center">
+    <div></div>
+    <div>
+      <form method="POST">
+        {% csrf_token %}
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal">Qo'shish</button>
+        <button type="submit" class="btn btn-warning" name="excel">.xlsx</button>
+        <button type="submit" class="btn btn-info" name="pdf">.pdf</button>
+      </form>
+    </div>
+  </div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="row" style="overflow-x: auto;"> 
+           
+            <table class="table" >
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Ismi</th>
+                  <th scope="col">Mahsulot nomi</th>
+                  <th scope="col">Mahsulot miqdori</th>
+                  <th scope="col">To'lov turi</th>
+                  <th scope="col">Jami summasi</th>
+                  <th scope="col">Jami foyda</th>
+                  <th scope="col">
+                    Sanasi<br>
+                    <span style="font-size: 12px;">(nasiya bo'lsa muddati)</span>
+                  </th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if sale %}
+                {% for i in sale %}
+                <tr>
+                  <th scope="row">{{ i.id }}</th>
+                  <td>{{ i.name }}</td>
+                  <td>{{ i.product_name }} </td>
+                  <td>{{ i.product_amount }}</td>
+                  <td>{{ i.payment_type }}</td>
+                  <td>{{ i.get_overall }}so'm</td>
+                  <td>{{ i.get_income }}so'm</td>
+                  <td>{{ i.deadline }}</td>
+                  <td>
+                    <form method="POST" class="d-flex justify-content-start align-items-center gap-3">
+                      {% csrf_token %}
+                      <input type="hidden" name="sale" value="{{ i.id }}">
+                      <button type="button" class="btn btn-success edit-btn" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#editExpance"> <i class="bi bi-pen"></i></button>
+                      <button type="button" class="btn btn-danger" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#DeleteModal"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                <div class="modal fade" id="DeleteModal" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h1 class="modal-title fs-5" id="exampleModalLabel">O'chirish</h1>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <form method="POST">
+                              {% csrf_token %}
+                              <input type="hidden" name="sale" value="{{ i.id }}">
+                                <div style="color: gray;text-align:center;font-size: 20px;">Haqiqattan Ham O'chirishni Xoylaysimi ?</div>
+                                <div style="text-align: center; margin-top:10px;"><button class="btn btn-primary" type="submit" name="delete">Tasdiqlash</button></div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <tr>
+                  <div style="color: gray;font-size:20px;text-align:center">
+                    Ma'lumot mavjud emas!!!
+                  </div>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+            <nav>
+              <ul class="pagination justify-content-center">
+                  {% if sale.has_previous %}
+                      <li class="page-item">
+                          <a class="page-link" href="?page={{ sale.previous_page_number }}">Oldingi</a>
+                      </li>
+                  {% endif %}
+                  {% for num in sale.paginator.page_range %}
+                      <li class="page-item {% if num == sale.number %}active{% endif %}">
+                          <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                      </li>
+                  {% endfor %}
+                  {% if sale.has_next %}
+                      <li class="page-item">
+                          <a class="page-link" href="?page={{ sale.next_page_number }}">Keyingi</a>
+                      </li>
+                  {% endif %}
+              </ul>
+            </nav>
+    </div>
+  
+    <!-- Button trigger modal -->
+
+   <!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Sotuv Qo'shish</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Ismi:</label>
+            <input type="text" class="form-control" id="formGroupExampleInput"  name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput2" class="form-label">Mahsulot:</label>
+            <select name="product" class="form-select" required>
+                {% for i in products %}
+                <option value="{{ i.id }}">{{ i.name }}</option>
+                {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Mahsulot soni:</label>
+            <input type="id" class="form-control" id="formGroupExampleInput"  name="amount" required>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput2" class="form-label">To'lov turi:</label>
+            <select name="payment_type" required class="form-select">
+                <option selected>----</option>
+                <option value="nasiya">Nasiya</option>
+                <option value="naqd">Naqd</option>
+                <option value="plastik">plastik</option>
+                <option value="plastik">pechisleniya</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Nasiya Bo'lsa muddati:</label>
+            <input type="date" class="form-control" id="formGroupExampleInput"  name="deadline">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary" name="add">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="editExpance" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Sotuvni tahrirlash</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" value="sale_id" name="sale" id="sale_id">
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Ismi:</label>
+                <input type="text" class="form-control" id="name"  name="name" required>
+              </div>
+              <div class="mb-3">
+                <label for="formGroupExampleInput2" class="form-label">Mahsulot:</label>
+                <select name="product" class="form-select" id="product" required>
+                    {% for i in products %}
+                    <option value="{{ i.id }}">{{ i.name }}</option>
+                    {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Mahsulot soni:</label>
+                <input type="id" class="form-control" id="amount"  name="amount" required>
+              </div>
+              <div class="mb-3">
+                <label for="formGroupExampleInput2" class="form-label">To'lov turi:</label>
+                <select name="payment_type" id="payment_type"  required class="form-select">
+                  <option value="nasiya">Nasiya</option>
+                  <option value="naqd">Naqd</option>
+                  <option value="plastik">plastik</option>
+                  <option value="pechisleniya">pechisleniya</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Nasiya Bo'lsa muddati:</label>
+                <input type="date" class="form-control" id="deadline"  name="deadline">
+              </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+              <button type="submit" class="btn btn-primary" name="save">Saqlash</button>
+            </div>
+          </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+    $(".edit-btn").click(function() {
+
+        var saleId = $(this).data("id");
+        var csrfToken = "{{ csrf_token }}";
+        
+        $.ajax({
+            url: '/sale/', 
+            type: 'POST',
+            headers: {
+              'X-CSRFToken': csrfToken 
+            },
+            data: {
+                'action_edit': 'edit',
+                'sale': saleId
+            },
+            success: function(response) {
+              console.log(response.sale)
+               
+                if (response.success) {
+                   
+                    $('#sale_id').val(response.sale.id);
+                    $('#name').val(response.sale.name);
+                    $('#product').val(response.sale.product_name);
+                    $('#amount').val(response.sale.product_amount);
+                    $('#payment_type').val(response.sale.payment_type);
+                    $('#deadline').val(response.sale.deadline);
+                   
+                    $('#product-modal').modal('show');
+                   
+                } else {
+                   
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+               
+                console.log("ishlamadi")
+            }
+        });
+    });
+});
+</script>
+{% endblock content %}

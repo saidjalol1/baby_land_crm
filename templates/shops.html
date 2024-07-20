@@ -1,0 +1,61 @@
+{% extends 'wrapper.html' %}
+{% block title %}Do'konlar{% endblock title %}
+{% block content %}
+<style>
+  table {
+    overflow: auto;
+  }
+  
+  tr:hover {
+    background-color: rgb(194, 190, 190);
+  }
+  
+  .card {
+    margin: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 16px rgba(0, 0, 0, 0.2);
+    background-color: #f8f9fa;
+  }
+  .card .card-body{
+    display: flex;
+    padding-top: 20px;
+    justify-content: center;
+    align-items: center;
+    color: black;
+    font-weight: 700;
+  }
+  .msg{
+    text-align: center;
+    color: red;
+    font-weight: 700;
+  }
+</style>
+<div class="row">
+  {% if region.shops.all %}
+    {% for i in region.shops.all %}
+    <div class="card" style="width: 18rem;">
+        <a href="{% url 'main_app:province_detail' i.id %}">
+          <div class="card-body">
+            {{ i.name }} {{ i.last_name }}
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+    {% else %}
+    <div class="msg">
+      {{ region.name }} viloyatida hech qanday Do'kon mavjud emas!!!<br>
+    </div>
+   <h4 style="margin-top: 100px;">Do'kon qo'shish uchun ko'rsatma</h4>
+    <ol>
+      <li>Sozlamalar bo'limiga o'tasiz</li>
+      <li>Do'kon qo'shish Formasini to'ldirib tasdiqlash tugmasini bosasiz</li>
+    </ol>
+  {% endif %}
+</div>
+{% endblock content %}
