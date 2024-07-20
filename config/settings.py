@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     #My apps
     "main_app.apps.MainAppConfig",
+    "expance.apps.ExpanceConfig",
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
