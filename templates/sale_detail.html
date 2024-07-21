@@ -47,27 +47,23 @@
     <div class="row" style="overflow-x: auto;"> 
       
       {% if object_list %}
-            <table class="table mt-4" >
+            <table class="table" >
               <thead>
                 <tr>
                   <th scope="col">#</th>
-                  <th scope="col">Ismi</th>
-                  <th scope="col">To'lov</th>
-                  <th scope="col">Qarz</th>
-                  <th scope="col">Jami summasi</th>
-                  <th scope="col">Sanasi</th>
+                  <th scope="col">Tovar</th>
+                  <th scope="col">Soni</th>
+                  <th scope="col">summasi</th>
                   <th scope="col">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {% for i in object_list %}
+                {% for i in sale.items.all %}
                 <tr>
                     <th scope="row">{{ i.id }}</th>
-                    <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.shop.name }} {{ i.shop.last_name }}</a></td> 
-                    <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.payment|intcomma }} UZS</a></td>                  
-                    <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.debt|intcomma }} UZS</a></td>
-                    <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.get_amount }}UZS</a></td>
-                    <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.date_added.month }}/{{ i.date_added.day }}/{{ i.date_added.year }}</a></td>
+                    <td>{{ i.name }} {{ i.shop.last_name }}</td>
+                    <td>{{ i.quantity|intcomma }} ta</td>
+                    <td>{{ i.get_amount|intcomma }} UZS</td>
                     <td>
                       <form method="POST" class="d-flex justify-content-start align-items-center gap-3">
                         {% csrf_token %}
@@ -76,8 +72,9 @@
                         <button type="button" class="btn btn-danger" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#DeleteModal"><i class="bi bi-trash"></i></button>
                       </form>
                     </td>
-                  </tr>
-                  <div class="modal fade" id="DeleteModal" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
+
+                </tr>
+                <div class="modal fade" id="DeleteModal" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
                     <div class="modal-dialog">
                       <div class="modal-content">
                         <div class="modal-header">
@@ -100,66 +97,77 @@
             </table>
             {% else %}
                   <div style="color: gray;font-size:20px;text-align:center">
-                    Ma'lumot mavjud emas!!!
+                    Bu checkga hali mahsulot qo'shilmagan!!!
                   </div>
             {% endif %}
-                <nav aria-label="Page navigation">
-                  <ul class="pagination justify-content-center">
-                      {% if page_obj.has_previous %}
-                          <li class="page-item">
-                              <a class="page-link" href="?page=1" aria-label="First">
-                                  <span aria-hidden="true">&laquo;&laquo;</span>
-                              </a>
-                          </li>
-                          <li class="page-item">
-                              <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                                  <span aria-hidden="true">&laquo;</span>
-                              </a>
-                          </li>
-                      {% else %}
-                          <li class="page-item disabled">
-                              <span class="page-link">&laquo;&laquo;</span>
-                          </li>
-                          <li class="page-item disabled">
-                              <span class="page-link">&laquo;</span>
-                          </li>
-                      {% endif %}
-              
-                      {% for num in page_obj.paginator.page_range %}
-                          {% if num == page_obj.number %}
-                              <li class="page-item active" aria-current="page">
-                                  <span class="page-link">{{ num }}</span>
-                              </li>
-                          {% else %}
-                              <li class="page-item">
-                                  <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                              </li>
-                          {% endif %}
-                      {% endfor %}
-              
-                      {% if page_obj.has_next %}
-                          <li class="page-item">
-                              <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                                  <span aria-hidden="true">&raquo;</span>
-                              </a>
-                          </li>
-                          <li class="page-item">
-                              <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
-                                  <span aria-hidden="true">&raquo;&raquo;</span>
-                              </a>
-                          </li>
-                      {% else %}
-                          <li class="page-item disabled">
-                              <span class="page-link">&raquo;</span>
-                          </li>
-                          <li class="page-item disabled">
-                              <span class="page-link">&raquo;&raquo;</span>
-                          </li>
-                      {% endif %}
-                  </ul>
-                </nav>
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                  {% if page_obj_sale_items.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page_sale_items={{ page_obj_sale_items.previous_page_number }}">Previous</a></li>
+                  {% endif %}
+                  {% for num in page_obj_sale_items.paginator.page_range %}
+                    {% if page_obj_sale_items.number == num %}
+                      <li class="page-item active"><a class="page-link" href="?page_sale_items={{ num }}">{{ num }}</a></li>
+                    {% else %}
+                      <li class="page-item"><a class="page-link" href="?page_sale_items={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                  {% endfor %}
+                  {% if page_obj_sale_items.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page_sale_items={{ page_obj_sale_items.next_page_number }}">Next</a></li>
+                  {% endif %}
+                </ul>
+            </nav>
     </div>
-  
+  <div class="row">
+
+<h3 class="mt-5">Mahsulotlar</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nomi</th>
+            <th>Narxi</th>
+            <th>Ombordagi soni</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in page_obj_products %}
+        <tr>
+            <td>{{ product.id }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.sale_price }}</td>
+            <td>{{ product.amount }}</td>
+            <td>
+                <form method="POST">
+                    {% csrf_token %}
+                    <button class="btn btn-warning">checkga qo'shish</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if page_obj_products.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page_products={{ page_obj_products.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    {% for num in page_obj_products.paginator.page_range %}
+      {% if page_obj_products.number == num %}
+        <li class="page-item active"><a class="page-link" href="?page_products={{ num }}">{{ num }}</a></li>
+      {% else %}
+        <li class="page-item"><a class="page-link" href="?page_products={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj_products.has_next %}
+      <li class="page-item"><a class="page-link" href="?page_products={{ page_obj_products.next_page_number }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+
+  </div>
     <!-- Button trigger modal -->
 
    <!-- Modal -->
@@ -173,29 +181,38 @@
       <div class="modal-body">
         <form method="POST">
           {% csrf_token %}
-          <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon1">Xaridor</span>
-            <select name="shop" class="form-select" id="province-select">
-              <option value="">Viloyatni tanlang</option>
-              {% for province in provinces %}
-                <option value="{{ province.id }}">{{ province.name }}</option>
-              {% endfor %}
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Ismi:</label>
+            <input type="text" class="form-control" id="formGroupExampleInput"  name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput2" class="form-label">Mahsulot:</label>
+            <select name="product" class="form-select" required>
+                {% for i in products %}
+                <option value="{{ i.id }}">{{ i.name }}</option>
+                {% endfor %}
             </select>
           </div>
-          <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon2">Tuman</span>
-            <select name="region" class="form-select" id="region-select">
-              <option value="">Tuman tanlang</option>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Mahsulot soni:</label>
+            <input type="id" class="form-control" id="formGroupExampleInput"  name="amount" required>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput2" class="form-label">To'lov turi:</label>
+            <select name="payment_type" required class="form-select">
+                <option selected>----</option>
+                <option value="nasiya">Nasiya</option>
+                <option value="naqd">Naqd</option>
+                <option value="plastik">plastik</option>
+                <option value="plastik">pechisleniya</option>
             </select>
           </div>
-          <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon3">Xaridor</span>
-            <select name="shop" class="form-select" id="shop-select">
-              <option value="">Xaridor tanlang</option>
-            </select>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Nasiya Bo'lsa muddati:</label>
+            <input type="date" class="form-control" id="formGroupExampleInput"  name="deadline">
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary" name="add">Saqlash</button>
           </div>
         </form>
@@ -297,42 +314,5 @@
         });
     });
 });
-</script>
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const provinceSelect = document.getElementById('province-select');
-    const regionSelect = document.getElementById('region-select');
-    const shopSelect = document.getElementById('shop-select');
-
-    provinceSelect.addEventListener('change', function() {
-      const provinceId = this.value;
-      fetch(`/get-regions/?province_id=${provinceId}`)
-        .then(response => response.json())
-        .then(data => {
-          regionSelect.innerHTML = '<option value="">Tuman tanlang</option>';
-          data.forEach(region => {
-            const option = document.createElement('option');
-            option.value = region.id;
-            option.textContent = region.name;
-            regionSelect.appendChild(option);
-          });
-        });
-    });
-
-    regionSelect.addEventListener('change', function() {
-      const regionId = this.value;
-      fetch(`/get-shops/?region_id=${regionId}`)
-        .then(response => response.json())
-        .then(data => {
-          shopSelect.innerHTML = '<option value="">Xaridor tanlang</option>';
-          data.forEach(shop => {
-            const option = document.createElement('option');
-            option.value = shop.id;
-            option.textContent = shop.name;
-            shopSelect.appendChild(option);
-          });
-        });
-    });
-  });
 </script>
 {% endblock content %}
