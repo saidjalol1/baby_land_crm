@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+{% load humanize %}
+{% load custom_filters %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title class="no-print">Check</title>
+    <style>
+        .container {
+            margin: 0 auto;
+            padding: 0 5%;
+            max-width: 1240px;
+            overflow-x: hidden;
+        }
+        header div {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            color: black;
+            padding: 2% 5%;
+        }
+        .title {
+            text-align: center;
+            font-size: 14px;
+        }
+        .name_surname {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .other_data {
+            margin-bottom: 20px;
+        }
+        footer {
+            padding: 30px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        footer .container {
+            display: flex;
+            justify-content: space-between;
+            column-gap: 100px;
+        }
+        table {
+            width: 100%;
+            border: 1px solid black;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        th {
+            border: 1px solid black;
+        }
+        td {
+            border: 1px solid black;
+        }
+        @media print {
+              body {
+                font-family: Arial, sans-serif;
+              }
+              .no-print {
+                display: none;
+              }
+              .print-only {
+                display: block;
+              }
+            }
+    </style>
+</head>
+<body>
+    <header>
+       <div class="container">
+        <div>
+            от  << _____ >> _____________ 201 ____ г.
+        </div>
+       </div>
+    </header>
+    <main>
+       <div class="container">
+        <div class="title">
+            Накладная No {{ sale.id }}
+        </div>
+        <div class="name_surname">
+            Кому : {{ sale.shop.name }} {{ sale.shop.last_name}}
+        </div>
+        <div class="other_data">
+            От кого {{ sale.sender }}
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Наименование</th>
+                    <th>Ед.изм</th>
+                    <th>Цена</th>
+                    <th>Сумма</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in page_obj_sale_items %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity}}</td>
+                    <td>{{ item.product.sale_price|intcomma }}</td>
+                    <td>{{ item.product.sale_price|multiply:item.quantity|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No items available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+       </div>
+    </main>
+    <footer>
+        <div class="container">
+            <div>
+                Cдал:______  ________________ 
+            </div>
+            <div>
+                Принял:_____  ________________ 
+            </div>
+        </div>
+       <div class="container">
+        <button class="no-print" onclick="window.print()">Print</button>
+       </div>
+    </footer>
+</body>
+</html>

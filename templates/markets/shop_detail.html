@@ -1,0 +1,187 @@
+{% extends 'wrapper.html' %}
+{% load humanize %}
+{% block title %}{{ shop.name }} {{ shop.last_name}}{% endblock title %}
+{% block content %}
+<style>
+  table {
+    overflow: auto;
+  }
+  
+  tr:hover {
+    background-color: rgb(194, 190, 190);
+  }
+  
+  .card {
+    margin: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 16px rgba(0, 0, 0, 0.2);
+    background-color: #f8f9fa;
+  }
+  .card .card-body{
+    display: flex;
+    padding-top: 20px;
+    justify-content: center;
+    align-items: center;
+    color: black;
+    font-weight: 700;
+  }
+  .msg{
+    text-align: center;
+    color: red;
+    font-weight: 700;
+  }
+</style>
+<div class="d-flex justify-content-between align-items-center">
+    <div>
+        <div class="d-felx justify-content-center align-items-center flex-column">
+            <form method="POST" class="d-flex gap-2 justify-content-center align-items-center flex-column flex-lg-row justify-content-lg-start">
+              {% csrf_token %}
+             <div class="from">
+              <input name="from" type="date" id="from" style="border-radius: 3px;margin-top:10px;outline:none;border:none;padding:10px 10px;">
+             </div>
+              <div class="till">
+                <input name="till" type="date" id="from" style="border-radius: 3px;margin-top:10px;outline:none;border:none;padding:10px 10px;">
+              </div>
+              <div class="button pt-2">
+                <button class="btn btn-primary" name="filtr" style="margin-left: 10px;">filtrlash</button>
+              </div>
+            </form>
+          </div>
+    </div>
+    <div>
+      <form method="POST">
+        {% csrf_token %}
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal">Qo'shish</button>
+        <button type="submit" class="btn btn-info" name="pdf">.pdf</button>
+      </form>
+    </div>
+  </div>
+<div class="row mt-3">
+    {% if object_list %}
+    <table class="table" >
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Ismi</th>
+        <th scope="col">To'lov</th>
+        <th scope="col">Qarz</th>
+        <th scope="col">Jami summasi</th>
+        <th scope="col">Sanasi</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in object_list %}
+      <tr>
+        <th scope="row">{{ i.id }}</th>
+        <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.shop.name }} {{ i.shop.last_name }}</a></td> 
+        <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.payment|intcomma }} UZS</a></td>                  
+        <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.debt|intcomma }} UZS</a></td>
+        <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.get_amount }}UZS</a></td>
+        <td><a href="{% url 'main_app:sale_detail' i.id %}">{{ i.date_added.month }}/{{ i.date_added.day }}/{{ i.date_added.year }}</a></td>
+          <td>
+            <form method="POST" class="d-flex justify-content-start align-items-center gap-3">
+              {% csrf_token %}
+              <input type="hidden" name="sale" value="{{ i.id }}">
+              <button type="button" class="btn btn-success edit-btn" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#editExpance"> <i class="bi bi-pen"></i></button>
+              <button type="button" class="btn btn-danger" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#DeleteModal"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+
+      </tr>
+      <div class="modal fade" id="DeleteModal" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">O'chirish</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="sale" value="{{ i.id }}">
+                      <div style="color: gray;text-align:center;font-size: 20px;">Haqiqattan Ham O'chirishni Xoylaysimi ?</div>
+                      <div style="text-align: center; margin-top:10px;"><button class="btn btn-primary" type="submit" name="delete">Tasdiqlash</button></div>
+                </form>
+              </div>
+            </div>
+          </div>
+      </div>
+      
+      {% endfor %}
+     
+    </tbody>
+    </table>
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;&laquo;</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;</span>
+                </li>
+            {% endif %}
+    
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+    
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;&raquo;</span>
+                </li>
+            {% endif %}
+        </ul>
+      </nav>
+    {% else %}
+    <div style="color: gray;font-size:20px;text-align:center">
+        Bu do'kon hali savdo qilgani yo'q!!!
+    </div>
+    {% endif %}
+</div>
+<div class="row">
+    <div class="card">
+        Qarzdorligi - 
+    </div>
+</div>
+{% endblock content %}

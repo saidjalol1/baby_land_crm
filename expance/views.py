@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect
 from django.views.generic import ListView
 from .models import Expances
 from print_funcs import pdf_generator
-
+from django.core.paginator import Paginator
 
 class ExpanceView(ListView):
-    template_name = "expances.html"
+    template_name = "expances/expances.html"
     model = Expances
     paginate_by = 10
     context_object_name = 'object_list'
@@ -15,8 +15,13 @@ class ExpanceView(ListView):
         return Expances.objects.all()
     
     def get_context_data(self, **kwargs):
+        context = {}
+        sale_items = Expances.objects.all()
+        paginator_sale_items = Paginator(sale_items, self.paginate_by)
+        page_number_sale_items = self.request.GET.get('page_sale_items')
+        page_obj_sale_items = paginator_sale_items.get_page(page_number_sale_items)
         context = {
-            "object_list" : self.get_queryset()
+            "object_list" : page_obj_sale_items
         }
         return context
     

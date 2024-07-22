@@ -32,6 +32,8 @@ class Product(models.Model):
     amount = models.PositiveIntegerField(default=0)
     qr_code_id = models.CharField(max_length=250)
     
+    def get_overall(self):
+        return self.base_price * self.amount
     
     def __str__(self):
         return self.name
@@ -53,6 +55,9 @@ class Sale(models.Model):
     date_added = models.DateField(auto_now_add=True)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name="sales")
     
+    def get_amount(self):
+        return sum([i.get_amount() for i in self.items.all()])
+    
     def __str__(self):
         return f"{self.date_added} - sotuv - {self.id}"
 
@@ -72,3 +77,10 @@ class SaleItems(models.Model):
     
     def __str__(self) -> str:
         return f"{self.product.name } - {self.id}"
+    
+class MoneyTransactions(models.Model):
+    amount = models.PositiveIntegerField(default=0)
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.amount

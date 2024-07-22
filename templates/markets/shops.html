@@ -40,7 +40,7 @@
   {% if region.shops.all %}
     {% for i in region.shops.all %}
     <div class="card" style="width: 18rem;">
-        <a href="{% url 'main_app:province_detail' i.id %}">
+        <a href="{% url 'main_app:shop_detail' i.id %}">
           <div class="card-body">
             {{ i.name }} {{ i.last_name }}
           </div>

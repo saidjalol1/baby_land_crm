@@ -1,0 +1,203 @@
+{% extends 'wrapper.html' %}
+
+{% load humanize %}
+{% block title %}Sotuv{% endblock title %}
+{% block content %}
+<style>
+  table{
+    overflow: auto;
+  }
+  tr:hover {
+    background-color: rgb(194, 190, 190);
+  }
+</style>
+<div class="pagetitle">
+    <h1>Check-{{ sale.id }}</h1>
+</div><!-- End Page Title -->
+  <div class="d-flex justify-content-between align-items-center">
+    <div></div>
+    <div>
+      <form method="POST">
+        {% csrf_token %}
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal">Qo'shish</button>
+        <button type="submit" class="btn btn-info" name="pdf">.pdf</button>
+      </form>
+    </div>
+  </div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="row mt-3" style="overflow-x: auto;"> 
+      
+      {% if page_obj_sale_items %}
+            <table class="table" >
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Tovar</th>
+                  <th scope="col">Soni</th>
+                  <th scope="col">summasi</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for i in page_obj_sale_items %}
+                <tr>
+                    <th scope="row">{{ i.id }}</th>
+                    <td>{{ i.product.name }} {{ i.shop.last_name }}</td>
+                    <td>{{ i.quantity|intcomma }} ta</td>
+                    <td>{{ i.get_amount|intcomma }} UZS</td>
+                    <td>
+                      <form method="POST" class="d-flex justify-content-start align-items-center gap-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="sale" value="{{ i.id }}">
+                        <button type="button" class="btn btn-success edit-btn" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#editExpance"> <i class="bi bi-pen"></i></button>
+                        <button type="button" class="btn btn-danger" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#DeleteModal"><i class="bi bi-trash"></i></button>
+                      </form>
+                    </td>
+
+                </tr>
+                <div class="modal fade" id="DeleteModal" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h1 class="modal-title fs-5" id="exampleModalLabel">O'chirish</h1>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <form method="POST">
+                              {% csrf_token %}
+                              <input type="hidden" name="sale" value="{{ i.id }}">
+                                <div style="color: gray;text-align:center;font-size: 20px;">Haqiqattan Ham O'chirishni Xoylaysimi ?</div>
+                                <div style="text-align: center; margin-top:10px;"><button class="btn btn-primary" type="submit" name="delete">Tasdiqlash</button></div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+                {% endfor %}
+              </tbody>
+            </table>
+      {% else %}
+            <div style="color: gray;font-size:20px;text-align:center">
+              Bu checkga hali mahsulot qo'shilmagan!!!
+            </div>
+      {% endif %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                  {% if page_obj_sale_items.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page_sale_items={{ page_obj_sale_items.previous_page_number }}">Previous</a></li>
+                  {% endif %}
+                  {% for num in page_obj_sale_items.paginator.page_range %}
+                    {% if page_obj_sale_items.number == num %}
+                      <li class="page-item active"><a class="page-link" href="?page_sale_items={{ num }}">{{ num }}</a></li>
+                    {% else %}
+                      <li class="page-item"><a class="page-link" href="?page_sale_items={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                  {% endfor %}
+                  {% if page_obj_sale_items.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page_sale_items={{ page_obj_sale_items.next_page_number }}">Next</a></li>
+                  {% endif %}
+                </ul>
+            </nav>
+    </div>
+
+   <!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Sotuv Qo'shish</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Mahsulot ID:</label>
+            <input type="text" class="form-control" id="formGroupExampleInput"  name="qr_code_id" required>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Nechta:</label>
+            <input type="text" class="form-control" id="formGroupExampleInput"  name="amount" required>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary" name="add">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="editExpance" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Sotuvni tahrirlash</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="mb-3">
+            <input type="hidden" name="item" id="item_id">
+            <label for="formGroupExampleInput" class="form-label">Mahsulot ID:</label>
+            <input type="text" class="form-control" id="edit_qr_code_id"  name="qr_code_id" required>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Nechta:</label>
+            <input type="text" class="form-control" id="edit_amount"  name="amount" required>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary" name="edit">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+    $(".edit-btn").click(function() {
+
+        var saleId = $(this).data("id");
+        var csrfToken = "{{ csrf_token }}";
+        
+        $.ajax({
+            url: '/sale/item/' + saleId ,
+            type: 'GET',
+            headers: {
+              'X-CSRFToken': csrfToken 
+            },
+            success: function(response) {
+              console.log(response)
+               
+                if (response) {
+                    $('#item_id').val(response.id);
+                    $('#edit_qr_code_id').val(response.product);
+                    $('#edit_amount').val(response.quantity);
+                   
+                    $('#product-modal').modal('show');
+                   
+                } else {
+                   
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+               
+                console.log("ishlamadi")
+            }
+        });
+    });
+});
+</script>
+{% endblock content %}
