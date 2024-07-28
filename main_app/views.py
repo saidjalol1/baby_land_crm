@@ -1,4 +1,5 @@
 from typing import Any
+import datetime
 from django.db.models.query import QuerySet
 from django.shortcuts import render, redirect
 from django.views import View
@@ -15,7 +16,8 @@ from print_funcs.pdf_generator import generate_pdf, generate_check_pdf
 import pdfkit
 from django.template.loader import render_to_string
 from django.http import HttpResponse
-    
+from django.db.models import Sum
+import calendar
 class GetRegionsView(View):
     def get(self, request):
         province_id = request.GET.get('province_id')
@@ -109,7 +111,29 @@ class StatisicsView(View):
     template = "index.html"
     
     def get_context_data(self, **kwargs):
-        context = {}
+        this_month = datetime.datetime.now().month
+        sale_items = SaleItems.objects.filter(sale__date_added__month=this_month)
+        
+        months = list(range(1, 13))
+        sales = [0] * 12  # Initialize sales for each month with 0
+
+        # for item in sale_items:
+        #     print(item)
+        #     sales[item['month'] - 1] = item['total_sales']
+        month_names = [calendar.month_name[i] for i in months]
+
+        most_sold_product = sale_items.values('product__name').annotate(total_quantity=Sum('quantity')).order_by('-total_quantity').first()
+        most_bought_shop = Sale.objects.filter(date_added__month=this_month).values('shop__name').annotate(total_sales=Sum('items__quantity')).order_by('-total_sales').first()
+        context = {
+            "sale_month": sum([i.get_amount() for i in SaleItems.objects.filter(sale__date_added__month = this_month)]),
+            "income_month": sum([i.get_income() for i in SaleItems.objects.filter(sale__date_added__month = this_month)]),
+            "most_sold_product": most_sold_product['product__name'] if most_sold_product else None,
+            "most_sold_quantity": most_sold_product['total_quantity'] if most_sold_product else 0,
+            "most_bought_shop": most_bought_shop['shop__name'] if most_bought_shop else None,
+            "most_bought_sales": most_bought_shop['total_sales'] if most_bought_shop else 0,
+            "month_names": month_names,
+            "sales": sales,
+        }
         return context
     
     def get(self, request):
@@ -216,7 +240,6 @@ class DebtView(ListView):
         return render(request, self.template_name, context)
         
         
-@method_decorator(login_required, name='dispatch')
 def print_function(request, query_set):
     template_name = "sale/check_template.html"
     context = query_set
@@ -278,20 +301,25 @@ class SaleDetailView(DetailView):
         if "pdf" in request.POST:
             return print_function(request, context)
         if "add" in request.POST:
-            sale = self.get_object()  # Assuming this retrieves the current sale object
+            sale = self.get_object()
+            amount = request.POST.get("amount")
             product = Product.objects.get(qr_code_id=request.POST.get("qr_code_id"))
-            obj = SaleItems.objects.create(
-                quantity = request.POST.get("amount"),
-                product = product,
-                sale = sale
-            )
-            obj_tr = Transaction.objects.create(
+            overall_amount = sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = product.qr_code_id)])
+            if overall_amount - int(amount) > 0:
+                obj = SaleItems.objects.create(
+                    quantity = request.POST.get("amount"),
                     product = product,
-                    transaction_type = "remove",
-                    amount = request.POST.get("amount")
+                    sale = sale
                 )
+                obj_tr = Transaction.objects.create(
+                        product = product,
+                        transaction_type = "remove",
+                        amount = request.POST.get("amount")
+                    )
+                return redirect("main_app:sale_detail", pk=sale.pk)
+            else:
+                messages.warning(request, "Omborda yetarli mahsulot mavjud emas")
             return redirect("main_app:sale_detail", pk=sale.pk)
-
 
 @method_decorator(login_required, name='dispatch')
 class StorageView(ListView):
@@ -364,18 +392,6 @@ class StorageHistoryView(ListView):
         return context
     
     def post(self, request):
-        if "add" in request.POST:
-            amount = request.POST.get("amount")
-            product_id = request.POST.get("product_id")
-            try:
-                product =  Product.objects.get(qr_code_id = product_id)
-                obj = Transaction.objects.create(
-                    product = product,
-                    transaction_type = "add",
-                    amount = amount
-                )
-            except Product.DoesNotExist:
-                messages.warning(self.request, "Omborda bu Mahsulot mavjud emas")
         if 'filtr' in request.POST:
             context = self.get_context_data()
             queryset = self.get_queryset()
@@ -408,9 +424,6 @@ class ProductsView(ListView):
         return context
     
     def post(self, request):
-        if "delete" in request.POST:
-            product = Product.objects.get(id = request.POST.get("product")).delete()
-            return redirect("main_app:products")
         if "save" in request.POST:
             name = request.POST.get("name")
             product_id = request.POST.get("product")

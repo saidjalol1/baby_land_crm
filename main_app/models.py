@@ -62,11 +62,16 @@ class Sale(models.Model):
         return f"{self.date_added} - sotuv - {self.id}"
 
 
+
 class SaleItems(models.Model):
     quantity = models.PositiveIntegerField(default=0)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="sales")
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="items")
     
+    
+    def get_income(self):
+        profit = self.product.sale_price - self.product.base_price
+        return profit * self.quantity
     
     def get_amount(self):
         overall =  self.product.sale_price * self.quantity
