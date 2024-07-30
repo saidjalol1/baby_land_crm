@@ -10,7 +10,7 @@ from django.contrib.auth import login, authenticate
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
-from .models import Province, Regions, Sale, Shop, Product, SaleItems, Transaction
+from .models import Province, Regions, Sale, Shop, Product, SaleItems, Transaction, Payments, Barcodes
 from django.contrib import messages
 from print_funcs.pdf_generator import generate_pdf, generate_check_pdf
 import pdfkit
@@ -18,6 +18,12 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.db.models import Sum
 import calendar
+import json
+
+from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404
+
+
 class GetRegionsView(View):
     def get(self, request):
         province_id = request.GET.get('province_id')
@@ -103,6 +109,7 @@ class ShopDetailView(ListView):
         page_obj_sale_items = paginator_sale_items.get_page(page_number_sale_items)
         
         context["items"] = page_obj_sale_items
+        context["debt"] = sum([ i.debt for i in sale_items])
         return context
     
     
@@ -113,26 +120,29 @@ class StatisicsView(View):
     def get_context_data(self, **kwargs):
         this_month = datetime.datetime.now().month
         sale_items = SaleItems.objects.filter(sale__date_added__month=this_month)
-        
+
         months = list(range(1, 13))
         sales = [0] * 12  # Initialize sales for each month with 0
 
-        # for item in sale_items:
-        #     print(item)
-        #     sales[item['month'] - 1] = item['total_sales']
+        # Calculate sales for each month
+        sales_by_month = SaleItems.objects.values('sale__date_added__month').annotate(total_sales=Sum('quantity'))
+        for sale in sales_by_month:
+            sales[sale['sale__date_added__month'] - 1] = sale['total_sales']
+
         month_names = [calendar.month_name[i] for i in months]
 
         most_sold_product = sale_items.values('product__name').annotate(total_quantity=Sum('quantity')).order_by('-total_quantity').first()
         most_bought_shop = Sale.objects.filter(date_added__month=this_month).values('shop__name').annotate(total_sales=Sum('items__quantity')).order_by('-total_sales').first()
+        
         context = {
-            "sale_month": sum([i.get_amount() for i in SaleItems.objects.filter(sale__date_added__month = this_month)]),
-            "income_month": sum([i.get_income() for i in SaleItems.objects.filter(sale__date_added__month = this_month)]),
+            "sale_month": sum([i.get_amount() for i in SaleItems.objects.filter(sale__date_added__month=this_month)]),
+            "income_month": sum([i.get_income() for i in SaleItems.objects.filter(sale__date_added__month=this_month)]),
             "most_sold_product": most_sold_product['product__name'] if most_sold_product else None,
             "most_sold_quantity": most_sold_product['total_quantity'] if most_sold_product else 0,
             "most_bought_shop": most_bought_shop['shop__name'] if most_bought_shop else None,
             "most_bought_sales": most_bought_shop['total_sales'] if most_bought_shop else 0,
-            "month_names": month_names,
-            "sales": sales,
+            "month_names": json.dumps(month_names),
+            "sales": json.dumps(sales),
         }
         return context
     
@@ -333,7 +343,7 @@ class StorageView(ListView):
         
         # Fetching all products
         objs = []
-        for i in Transaction.objects.all():
+        for i in Transaction.objects.all().order_by("-id"):
             pro = {
                 "id": i.id,
                 "product_id" : i.product.qr_code_id,
@@ -341,7 +351,7 @@ class StorageView(ListView):
                 "amount" : sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]),
                 "sale_price" : i.product.sale_price,
                 "base_price" : i.product.base_price,
-                "overall" : sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price,
+                "overall" : (sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price,
             }
             objs.append(pro) if pro["product_id"] not in {j["product_id"] for j in objs} else None
         products = objs
@@ -349,8 +359,24 @@ class StorageView(ListView):
         page_number_products = self.request.GET.get('page_products')
         page_obj_products = paginator_products.get_page(page_number_products)
         
-        context["page_obj_products"] = page_obj_products
         
+        payment_objs = []
+        for i in Payments.objects.all().order_by("-id"):
+            p_obj = {
+                "id": i.id,
+                "amount" : i.amount,
+                "date" : i.date,
+            }
+            payment_objs.append(p_obj) if p_obj["id"] not in {j["id"] for j in payment_objs} else None
+        payments = payment_objs
+        paginator_payments = Paginator(payments, self.paginate_by)
+        page_number_payments = self.request.GET.get('page_payments')
+        page_obj_payments = paginator_payments.get_page(page_number_payments)
+        
+        context["page_obj_products"] = page_obj_products
+        context["payments"] = page_obj_payments
+        context["balance"] = sum([ i["overall"] for i in objs]) - sum([ i["amount"] for i in payments])
+        print(context["payments"])
         return context
     
     def post(self, request):
@@ -366,6 +392,17 @@ class StorageView(ListView):
                 )
             except Product.DoesNotExist:
                 messages.warning(self.request, "Omborda bu Mahsulot mavjud emas")
+        if "add_payment" in request.POST:
+            amount = request.POST.get("amount")
+            date = request.POST.get("date")
+            try:
+                payment =  Payments.objects.create(
+                    amount = amount,
+                    date = date
+                )
+                messages.success(request, "To'lov qo'shildi")
+            except Exception as e:
+                messages.warning(self.request, e)
         return redirect("main_app:storage")
 
 @method_decorator(login_required, name='dispatch')
@@ -486,4 +523,55 @@ class LoginView(View):
                 return render(request, self.template_name, context)
         return render(request, self.template_name, context)
     
+@method_decorator(login_required, name='dispatch')
+class Barcode(ListView):
+    template_name = "qr_codes.html"
+    model = Barcodes
+    context_object_name = 'codes'
+    paginate_by = 10
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Fetching all products
+        objs = []
+        for i in Barcodes.objects.all().order_by("-id"):
+            pro = {
+                "id": i.id,
+                "number" : i.number
+            }
+            objs.append(pro) if pro["id"] not in {j["id"] for j in objs} else None
+        products = objs
+        paginator_products = Paginator(products, self.paginate_by)
+        page_number_products = self.request.GET.get('page_products')
+        page_obj_products = paginator_products.get_page(page_number_products)
+    
+        context["page_obj_products"] = page_obj_products
+        return context
+    
+    def post(self, request):
+        if "add" in request.POST:
+            number = request.POST.get("ID")
+            try:
+                product =  Barcodes.objects.get(number = number)
+                messages.warning(self.request, "Omborda bu barcode mavjud")
+            except Barcodes.DoesNotExist:
+                product =  Barcodes.objects.create(number = number)
+                return redirect("main_app:storage")
+        if "delete" in request.POST:
+            number = request.POST.get("ID")
+            product =  Barcodes.objects.get(id = number)
+            product.delete()
+        return redirect("main_app:storage")
+
+def barcode_image(request, barcode_id):
+    barcode = get_object_or_404(Barcodes, pk=barcode_id)
+
+    if not barcode.barcode_image:
+        raise Http404("Barcode image does not exist.")
+
+    # Open the image file
+    with barcode.barcode_image.open('rb') as f:
+        response = HttpResponse(f.read(), content_type='image/png')
+        response['Content-Disposition'] = f'inline; filename="{barcode.number}.png"'
+        return response

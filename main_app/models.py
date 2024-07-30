@@ -1,5 +1,8 @@
 from django.db import models
-
+from django.core.files.base import ContentFile
+import barcode
+from barcode.writer import ImageWriter
+from io import BytesIO
 
 class Province(models.Model):
     name = models.CharField(max_length=250)
@@ -88,4 +91,37 @@ class MoneyTransactions(models.Model):
     date = models.DateField(auto_now_add=True)
     
     def __str__(self):
-        return self.amount
+        return str(self.amount)
+    
+
+class Payments(models.Model):
+    amount = models.PositiveIntegerField(default=0)
+    date = models.DateField()
+    
+    def __str__(self):
+        return str(self.amount)
+    
+class Barcodes(models.Model):
+    number = models.CharField(max_length=250)
+    barcode_image = models.ImageField(upload_to='barcodes/', blank=True, null=True)
+
+    def __str__(self):
+        return self.number
+
+    def save(self, *args, **kwargs):
+        if not self.barcode_image and self.number:
+            self.generate_barcode()
+        super().save(*args, **kwargs)
+
+    def generate_barcode(self):
+        # Generate the barcode using the 'code128' format
+        code = barcode.get_barcode_class('code128')
+        barcode_instance = code(self.number, writer=ImageWriter())
+
+        # Create an in-memory output for the barcode image
+        buffer = BytesIO()
+        barcode_instance.write(buffer)
+        buffer.seek(0)
+
+        # Save the barcode image to the model's `barcode_image` field
+        self.barcode_image.save(f"{self.number}.png", ContentFile(buffer.read()), save=False)

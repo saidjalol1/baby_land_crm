@@ -4,13 +4,14 @@ from django.contrib.auth.views import LogoutView
 from .views import  (StatisicsView,LoginView, ProvincesView, 
                      ProvinceDetailView, RegionDetailView, SaleView, 
                      SaleDetailView, GetRegionsView, GetShopsView, ShopDetailView, 
-                     StorageView, ProductsView,StorageHistoryView,ProductGetView,SaleItemView, DebtView, SaleGetView)
+                     StorageView, ProductsView,StorageHistoryView,ProductGetView,SaleItemView, DebtView, 
+                     SaleGetView, Barcode, barcode_image)
 
 app_name = "main_app"
 
 urlpatterns = [
     path("", StatisicsView.as_view(), name="main"),
-    
+    path('barcode_image/<int:barcode_id>/', barcode_image, name='barcode_image'),
     path("provinces/", ProvincesView.as_view(), name="provinces"),
     path("province/<int:pk>/regions/", ProvinceDetailView.as_view(), name="province_detail"),
     path("regions/<int:pk>/shops/", RegionDetailView.as_view(), name="region_detail"),
@@ -27,6 +28,7 @@ urlpatterns = [
     path("storage/", StorageView.as_view(), name="storage"),
     path("debt/", DebtView.as_view(), name="debt"),
     path("storage/products/", ProductsView.as_view(), name="products"),
+    path("barcodes/", Barcode.as_view(), name="barcode"),
     path("storage/history/", StorageHistoryView.as_view(), name="storage_history"),
     path('storage/products/<int:pk>', ProductGetView.as_view(), name='product_get'),
     
