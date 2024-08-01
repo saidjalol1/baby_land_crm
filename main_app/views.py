@@ -413,8 +413,11 @@ class StorageView(ListView):
         
         context["page_obj_products"] = page_obj_products
         context["payments"] = page_obj_payments
-        if objs[0]:
-            context["balance"] = sum([ i["overall"] for i in objs]) - sum([ i["amount"] for i in payments])
+        try:
+            if objs[0]:
+                context["balance"] = sum([ i["overall"] for i in objs]) - sum([ i["amount"] for i in payments])
+        except Exception as e:
+            pass
         return context
     
     def post(self, request):

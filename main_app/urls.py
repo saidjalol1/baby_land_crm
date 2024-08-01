@@ -10,7 +10,7 @@ from .views import  (StatisicsView,LoginView, ProvincesView,
 app_name = "main_app"
 
 urlpatterns = [
-    path("", StatisicsView.as_view(), name="main"),
+    path("statistics/", StatisicsView.as_view(), name="main"),
     path('barcode_image/<int:barcode_id>/', barcode_image, name='barcode_image'),
     path("provinces/", ProvincesView.as_view(), name="provinces"),
     path("province/<int:pk>/regions/", ProvinceDetailView.as_view(), name="province_detail"),
