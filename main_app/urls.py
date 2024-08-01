@@ -33,7 +33,7 @@ urlpatterns = [
     path('storage/products/<int:pk>', ProductGetView.as_view(), name='product_get'),
     
     
-    path('/settings/', SettingsView.as_view(), name='settings_app'),
+    path('settings/', SettingsView.as_view(), name='settings_app'),
     
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),

@@ -56,8 +56,7 @@
     </div><!-- End Logo -->
 
     <div class="search-bar">
-      <form class="search-form d-flex align-items-center" method="POST">
-        {% csrf_token %}
+      <form class="search-form d-flex align-items-center" method="GET">
         <input type="text" name="query" placeholder="Qidiruv" title="Enter search keyword">
         <button type="submit" title="Search" name="search"><i class="bi bi-search"></i></button>
       </form>

@@ -55,7 +55,7 @@
                       <form method="POST" class="d-flex justify-content-start align-items-center gap-3">
                         {% csrf_token %}
                         <input type="hidden" name="sale" value="{{ i.id }}">
-                        <button type="button" class="btn btn-success edit-btn" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#editExpance"> <i class="bi bi-pen"></i></button>
+                     
                         <button type="button" class="btn btn-danger" data-id="{{ i.id }}" data-bs-toggle="modal"  data-bs-target="#DeleteModal"><i class="bi bi-trash"></i></button>
                       </form>
                     </td>

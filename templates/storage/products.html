@@ -111,10 +111,8 @@
             <label for="formGroupExampleInput" class="form-label">Nomi:</label>
             <input type="text" class="form-control" id="formGroupExampleInput" name="name" required>
           </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Miqdori:</label>
-            <input type="number" class="form-control" id="formGroupExampleInput2" name="amount" required>
-          </div>
+        
+            <input type="hidden" value="0" class="form-control" id="formGroupExampleInput2" name="amount" required>
           <div class="mb-3">
             <label for="formGroupExampleInput2" class="form-label">Tan narxi</label>
             <input type="number" class="form-control" id="formGroupExampleInput2" name="base_price" required>
@@ -187,7 +185,6 @@
                       $('#qr_code_id').val(response.qr_code_id);
                       $('#product_id').val(response.id);
                       $('#name').val(response.name);
-                      $('#amount').val(response.amount);
                       $('#base_price').val(response.base_price);
                       $('#sale_price').val(response.sale_price);
   

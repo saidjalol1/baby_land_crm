@@ -355,22 +355,43 @@ class StorageView(ListView):
     context_object_name = 'products'
     paginate_by = 10
 
+
+    def get_queryset(self):
+        # Return an empty queryset or the queryset you want
+        return Transaction.objects.none()
+    
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = {}
         
         # Fetching all products
         objs = []
-        for i in Transaction.objects.all().order_by("-id"):
-            pro = {
-                "id": i.id,
-                "product_id" : i.product.qr_code_id,
-                "name" : i.product.name,
-                "amount" : sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]),
-                "sale_price" : i.product.sale_price,
-                "base_price" : i.product.base_price,
-                "overall" : (sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price,
-            }
-            objs.append(pro) if pro["product_id"] not in {j["product_id"] for j in objs} else None
+        if "search" in self.request.GET:
+            obj = Transaction.objects.filter(product__qr_code_id = self.request.GET.get("query")).order_by("-id")
+            print(self.request.GET.get("query"))
+            pro = {}
+            if obj:
+                pro = {
+                    "id": obj.last().id,
+                    "product_id" : obj.last().product.qr_code_id,
+                    "name" : obj.last().product.name,
+                    "amount" : sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = obj.last().product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = obj.last().product.qr_code_id)]),
+                    "sale_price" : obj.last().product.sale_price,
+                    "base_price" : obj.last().product.base_price,
+                    "overall" : (sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = obj.last().product.qr_code_id)]) * obj.last().product.base_price) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = obj.last().product.qr_code_id)]) * obj.last().product.base_price,
+                }
+            objs.append(pro)
+        else:
+                for i in Transaction.objects.all().order_by("-id"):
+                    pro = {
+                        "id": i.id,
+                        "product_id" : i.product.qr_code_id,
+                        "name" : i.product.name,
+                        "amount" : sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]),
+                        "sale_price" : i.product.sale_price,
+                        "base_price" : i.product.base_price,
+                        "overall" : (sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price,
+                    }
+                    objs.append(pro) if pro["product_id"] not in {j["product_id"] for j in objs} else None
         products = objs
         paginator_products = Paginator(products, self.paginate_by)
         page_number_products = self.request.GET.get('page_products')
@@ -392,10 +413,12 @@ class StorageView(ListView):
         
         context["page_obj_products"] = page_obj_products
         context["payments"] = page_obj_payments
-        context["balance"] = sum([ i["overall"] for i in objs]) - sum([ i["amount"] for i in payments])
+        if objs[0]:
+            context["balance"] = sum([ i["overall"] for i in objs]) - sum([ i["amount"] for i in payments])
         return context
     
     def post(self, request):
+        context = self.get_context_data()
         if "add" in request.POST:
             amount = request.POST.get("amount")
             product_id = request.POST.get("product_id")
@@ -419,6 +442,25 @@ class StorageView(ListView):
                 messages.success(request, "To'lov qo'shildi")
             except Exception as e:
                 messages.warning(self.request, e)
+                
+        if "search" in request.POST:
+            try:
+                obj = Transaction.objects.filter(product__qr_code_id = request.POST.get("search"))
+                for i in obj:
+                    tr = {
+                        "id": i.id,
+                        "product_id" : i.product.qr_code_id,
+                        "name" : i.product.name,
+                        "amount" : sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]),
+                        "sale_price" : i.product.sale_price,
+                        "base_price" : i.product.base_price,
+                        "overall" : (sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = i.product.qr_code_id)]) * i.product.base_price,
+                    }
+                if tr.amount > 0:
+                    context["page_obj_products"] = tr
+                    return self.render_to_response(context)
+            except Transaction.DoesNotExist:
+                messages.success(request, "Omborda Mahsulot mavjud emas")
         return redirect("main_app:storage")
 
 @method_decorator(login_required, name='dispatch')
@@ -547,16 +589,24 @@ class Barcode(ListView):
     paginate_by = 10
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = {}
         
         # Fetching all products
         objs = []
-        for i in Barcodes.objects.all().order_by("-id"):
-            pro = {
-                "id": i.id,
-                "number" : i.number
-            }
-            objs.append(pro) if pro["id"] not in {j["id"] for j in objs} else None
+        if "search" in self.request.GET:
+            for i in Barcodes.objects.filter(number__icontains = self.request.GET.get("query")).order_by("-id"):
+                pro = {
+                    "id": i.id,
+                    "number" : i.number
+                }
+                objs.append(pro) if pro["id"] not in {j["id"] for j in objs} else None
+        else:
+            for i in Barcodes.objects.all().order_by("-id"):
+                pro = {
+                    "id": i.id,
+                    "number" : i.number
+                }
+                objs.append(pro) if pro["id"] not in {j["id"] for j in objs} else None
         products = objs
         paginator_products = Paginator(products, self.paginate_by)
         page_number_products = self.request.GET.get('page_products')
@@ -573,12 +623,12 @@ class Barcode(ListView):
                 messages.warning(self.request, "Omborda bu barcode mavjud")
             except Barcodes.DoesNotExist:
                 product =  Barcodes.objects.create(number = number)
-                return redirect("main_app:storage")
+                return redirect("main_app:barcode")
         if "delete" in request.POST:
             number = request.POST.get("ID")
             product =  Barcodes.objects.get(id = number)
             product.delete()
-        return redirect("main_app:storage")
+        return redirect("main_app:barcode")
     
 
 @method_decorator(login_required, name='dispatch')
