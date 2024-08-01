@@ -175,34 +175,9 @@
             {% csrf_token %}
             <input type="hidden" value="sale_id" name="sale" id="sale_id">
             <div class="mb-3">
-                <label for="formGroupExampleInput" class="form-label">Ismi:</label>
-                <input type="text" class="form-control" id="name"  name="name" required>
-              </div>
-              <div class="mb-3">
-                <label for="formGroupExampleInput2" class="form-label">Mahsulot:</label>
-                <select name="product" class="form-select" id="product" required>
-                    {% for i in products %}
-                    <option value="{{ i.id }}">{{ i.name }}</option>
-                    {% endfor %}
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="formGroupExampleInput" class="form-label">Mahsulot soni:</label>
-                <input type="id" class="form-control" id="amount"  name="amount" required>
-              </div>
-              <div class="mb-3">
-                <label for="formGroupExampleInput2" class="form-label">To'lov turi:</label>
-                <select name="payment_type" id="payment_type"  required class="form-select">
-                  <option value="nasiya">Nasiya</option>
-                  <option value="naqd">Naqd</option>
-                  <option value="plastik">plastik</option>
-                  <option value="pechisleniya">pechisleniya</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="formGroupExampleInput" class="form-label">Nasiya Bo'lsa muddati:</label>
-                <input type="date" class="form-control" id="deadline"  name="deadline">
-              </div>
+                <label for="formGroupExampleInput" class="form-label">To'lov:</label>
+                <input type="number" class="form-control" id="name"  name="payment" required>
+            </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
               <button type="submit" class="btn btn-primary" name="save">Saqlash</button>
@@ -294,5 +269,14 @@
         });
     });
   });
+  $(document).ready(function() {
+    $(".edit-btn").click(function() {
+        var saleId = $(this).data("id");
+        var csrfToken = "{{ csrf_token }}";
+
+        // Set the sale ID in the hidden input
+        $('#sale_id').val(saleId);
+      })
+});
 </script>
 {% endblock content %}

@@ -111,6 +111,17 @@ class ShopDetailView(ListView):
         context["items"] = page_obj_sale_items
         context["debt"] = sum([ i.debt for i in sale_items])
         return context
+
+    def post(self, request, *args, **kwargs):
+        if "save" in request.POST:
+            sale = Sale.objects.get(id = request.POST.get("sale"))
+            if sale.get_amount() > 0:
+                sale.payment = request.POST.get("payment")
+                sale.debt = sale.get_amount() - int( request.POST.get("payment"))
+                sale.save()
+            else:
+                return redirect("main_app:shop_detail",  pk=self.kwargs["pk"])
+            return redirect("main_app:shop_detail",  pk=self.kwargs["pk"])
     
     
 @method_decorator(login_required, name='dispatch')
@@ -168,7 +179,7 @@ class SaleView(ListView):
     
     def get_context_data(self, **kwargs):
         context = {}
-        sale_items = Sale.objects.all()
+        sale_items = Sale.objects.all().order_by("-id")
         paginator_sale_items = Paginator(sale_items, self.paginate_by)
         page_number_sale_items = self.request.GET.get('page_sale_items')
         page_obj_sale_items = paginator_sale_items.get_page(page_number_sale_items)
@@ -180,7 +191,7 @@ class SaleView(ListView):
         }
         
         return context
-    
+
     def post(self, request):
         queryset = self.get_queryset()
         context = self.get_context_data()
@@ -188,6 +199,12 @@ class SaleView(ListView):
             obj = Sale.objects.create(
                 shop = Shop.objects.get(id=request.POST.get("shop"))
             )
+            return redirect("main_app:sale")
+        if "save" in request.POST:
+            sale = Sale.objects.get(id = request.POST.get("sale"))
+            sale.payment = request.POST.get("payment")
+            sale.debt = sale.get_amount() - int( request.POST.get("payment"))
+            sale.save()
             return redirect("main_app:sale")
         if "delete" in request.POST:
             obj = Sale.objects.get(id=request.POST.get("sale")).delete()
@@ -376,7 +393,6 @@ class StorageView(ListView):
         context["page_obj_products"] = page_obj_products
         context["payments"] = page_obj_payments
         context["balance"] = sum([ i["overall"] for i in objs]) - sum([ i["amount"] for i in payments])
-        print(context["payments"])
         return context
     
     def post(self, request):
@@ -563,6 +579,30 @@ class Barcode(ListView):
             product =  Barcodes.objects.get(id = number)
             product.delete()
         return redirect("main_app:storage")
+    
+
+@method_decorator(login_required, name='dispatch')
+class SettingsView(View):
+    template_name = "settings.html"
+    def get(self, request):
+        context = {}
+        context["provinces"] = Province.objects.all()
+        return render(request, self.template_name, context)
+    
+    def post(self, request):
+        if "add" in request.POST:
+            region = Regions.objects.get(id = request.POST.get("region"))
+            shop_name = request.POST.get("name")
+            shop_surname = request.POST.get("surname")
+            shop =  Shop.objects.create(name = shop_name, last_name = shop_surname, region = region)
+            messages.success(request, f"{shop_name}{shop_surname}- klient muvoffaqiyatli qo'shildi")
+            
+        if "addregion" in request.POST:
+            province = Province.objects.get(id = request.POST.get("province"))
+            region_name = request.POST.get("region_name")
+            shop =  Regions.objects.create(name = region_name,  province = province)
+            messages.success(request, f"{region_name} muvoffaqiyatli qo'shildi")
+        return redirect("main_app:settings_app")
 
 def barcode_image(request, barcode_id):
     barcode = get_object_or_404(Barcodes, pk=barcode_id)

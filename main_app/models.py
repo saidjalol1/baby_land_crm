@@ -101,6 +101,7 @@ class Payments(models.Model):
     def __str__(self):
         return str(self.amount)
     
+    
 class Barcodes(models.Model):
     number = models.CharField(max_length=250)
     barcode_image = models.ImageField(upload_to='barcodes/', blank=True, null=True)

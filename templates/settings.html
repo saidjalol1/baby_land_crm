@@ -1,0 +1,186 @@
+{% extends 'wrapper.html' %}
+{% load humanize %}
+{% block title %}Barcodes{% endblock title %}
+{% block content %}
+<style>
+  table{
+    overflow: auto;
+  }
+  tr:hover {
+    background-color: rgb(194, 190, 190);
+  }
+  .product_a{
+    margin-right: 10px;
+    background-color: white;
+    color: black;
+  }
+  #scannerInput {
+        position: absolute;
+        top: -9999px;
+    }
+</style><!-- End Page Title -->
+<h1>Sozlamalar</h1>
+  <div class="d-flex justify-content-end align-items-center">
+    <div>
+      <form method="POST">
+        {% csrf_token %}
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal">Do'kon Qo'shish</button>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#tuman">Tuman Qo'shish</button>
+      </form>
+    </div>
+  </div>
+  {% if messages %}
+<ul class="messages text-center mt-10" style="color: red;">
+    {% for message in messages %}
+    <h1{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</h1>
+    {% endfor %}
+</ul>
+{% endif %}
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Do'kon Qo'shish</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon1">Xaridor</span>
+              <select name="province" class="form-select" id="province-select" required>
+                <option value="">Viloyatni tanlang</option>
+                {% for province in provinces %}
+                  <option value="{{ province.id }}">{{ province.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon2">Tuman</span>
+              <select name="region" class="form-select" id="region-select" required>
+                <option value="">Tuman tanlang</option>
+              </select>
+            </div>
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon3">Ismi</span>
+              <input type="text" name="name" placeholder="Ismi" required>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text" id="basic-addon3">Familiyasi</span>
+                <input type="text" name="surname" placeholder="Familiyasi" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+              <button type="submit" class="btn btn-primary" name="add">Saqlash</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+</div>
+<div class="modal fade" id="tuman" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Do'kon Qo'shish</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon1">Xaridor</span>
+              <select name="province" class="form-select" id="province-select" required>
+                <option value="">Viloyatni tanlang</option>
+                {% for province in provinces %}
+                  <option value="{{ province.id }}">{{ province.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon2">Tuman Nomi</span>
+              <input type="text" name="region_name" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+              <button type="submit" class="btn btn-primary" name="addregion">Saqlash</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    $(document).ready(function() {
+      $(".edit-btn").click(function() {
+  
+          var saleId = $(this).data("id");
+          var csrfToken = "{{ csrf_token }}";
+          
+          $.ajax({
+              url: '/sale/', 
+              type: 'POST',
+              headers: {
+                'X-CSRFToken': csrfToken 
+              },
+              data: {
+                  'action_edit': 'edit',
+                  'sale': saleId
+              },
+              success: function(response) {
+                console.log(response.sale)
+                 
+                  if (response.success) {
+                     
+                      $('#sale_id').val(response.sale.id);
+                      $('#name').val(response.sale.name);
+                      $('#product').val(response.sale.product_name);
+                      $('#amount').val(response.sale.product_amount);
+                      $('#payment_type').val(response.sale.payment_type);
+                      $('#deadline').val(response.sale.deadline);
+                     
+                      $('#product-modal').modal('show');
+                     
+                  } else {
+                     
+                      alert('Error: ' + response.message);
+                  }
+              },
+              error: function(xhr, status, error) {
+                 
+                  console.log("ishlamadi")
+              }
+          });
+      });
+  });
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const provinceSelect = document.getElementById('province-select');
+      const regionSelect = document.getElementById('region-select');
+      const shopSelect = document.getElementById('shop-select');
+  
+      provinceSelect.addEventListener('change', function() {
+        const provinceId = this.value;
+        fetch(`/get-regions/?province_id=${provinceId}`)
+          .then(response => response.json())
+          .then(data => {
+            regionSelect.innerHTML = '<option value="">Tuman tanlang</option>';
+            data.forEach(region => {
+              const option = document.createElement('option');
+              option.value = region.id;
+              option.textContent = region.name;
+              regionSelect.appendChild(option);
+            });
+          });
+      });
+  
+      regionSelect.addEventListener('change', function() {
+        const regionId = this.value;
+        fetch(`/get-shops/?region_id=${regionId}`)
+          .then(response => response.json())
+          });
+      });
+  </script>
+{% endblock content %}

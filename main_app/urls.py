@@ -5,7 +5,7 @@ from .views import  (StatisicsView,LoginView, ProvincesView,
                      ProvinceDetailView, RegionDetailView, SaleView, 
                      SaleDetailView, GetRegionsView, GetShopsView, ShopDetailView, 
                      StorageView, ProductsView,StorageHistoryView,ProductGetView,SaleItemView, DebtView, 
-                     SaleGetView, Barcode, barcode_image)
+                     SaleGetView, Barcode, barcode_image, SettingsView)
 
 app_name = "main_app"
 
@@ -32,6 +32,8 @@ urlpatterns = [
     path("storage/history/", StorageHistoryView.as_view(), name="storage_history"),
     path('storage/products/<int:pk>', ProductGetView.as_view(), name='product_get'),
     
+    
+    path('/settings/', SettingsView.as_view(), name='settings_app'),
     
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
