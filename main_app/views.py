@@ -330,22 +330,26 @@ class SaleDetailView(DetailView):
         if "add" in request.POST:
             sale = self.get_object()
             amount = request.POST.get("amount")
-            product = Product.objects.get(qr_code_id=request.POST.get("qr_code_id"))
-            overall_amount = sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = product.qr_code_id)])
-            if overall_amount - int(amount) > 0:
-                obj = SaleItems.objects.create(
-                    quantity = request.POST.get("amount"),
-                    product = product,
-                    sale = sale
-                )
-                obj_tr = Transaction.objects.create(
+            try:
+                product = Product.objects.get(qr_code_id=request.POST.get("qr_code_id"))
+                overall_amount = sum([ d.amount for d in Transaction.objects.filter(transaction_type = "add").filter(product__qr_code_id = product.qr_code_id)]) - sum([ d.amount for d in Transaction.objects.filter(transaction_type = "remove").filter(product__qr_code_id = product.qr_code_id)])
+                if overall_amount - int(amount) > 0:
+                    obj = SaleItems.objects.create(
+                        quantity = request.POST.get("amount"),
                         product = product,
-                        transaction_type = "remove",
-                        amount = request.POST.get("amount")
+                        sale = sale
                     )
+                    obj_tr = Transaction.objects.create(
+                            product = product,
+                            transaction_type = "remove",
+                            amount = request.POST.get("amount")
+                        )
+                    return redirect("main_app:sale_detail", pk=sale.pk)
+                else:
+                    messages.warning(request, "Omborda yetarli mahsulot mavjud emas")
                 return redirect("main_app:sale_detail", pk=sale.pk)
-            else:
-                messages.warning(request, "Omborda yetarli mahsulot mavjud emas")
+            except Exception as e:
+                    messages.warning(request, "Omborda yetarli mahsulot mavjud emas")
             return redirect("main_app:sale_detail", pk=sale.pk)
 
 @method_decorator(login_required, name='dispatch')

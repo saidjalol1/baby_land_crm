@@ -18,6 +18,11 @@
         position: absolute;
         top: -9999px;
     }
+  #reader {
+      width: 100%;
+      height: 100%;
+      border: 1px solid black;
+  }
 </style><!-- End Page Title -->
 <h1>Ombor</h1>
   <div class="d-flex justify-content-end align-items-center">
@@ -26,7 +31,7 @@
         {% csrf_token %}
         <a type="button" class="btn product_a" href="{% url 'main_app:products' %}">Mahsulotlar</a>
         <a type="button" class="btn product_a" href="{% url 'main_app:storage_history' %}">Tarix</a>
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal">Qo'shish</button>
+        <button type="button" class="btn btn-success"  id="startScanButton">Qo'shish</button>
       </form>
     </div>
   </div>
@@ -37,7 +42,7 @@
     {% endfor %}
 </ul>
 {% endif %}
-
+<div id="reader" style="display: none;"></div>
     <div class="row mt-4" style="overflow-x: auto;"> 
       {% if page_obj_products %}
             <table class="table" >
@@ -144,9 +149,9 @@
             </nav>
       </div>
     </div>
-    <input type="text" id="scannerInput" autofocus>
+    <input type="text" id="scannerInput" autofocus style="display: none;">
    <!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="scanModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -158,7 +163,7 @@
           {% csrf_token %}
           <div class="mb-3">
             <label for="formGroupExampleInput" class="form-label">Qr Code ID:</label>
-            <input type="text" class="form-control"  name="product_id" required>
+            <input type="text" class="form-control" id="productID"  name="product_id" required>
           </div>
           <div class="mb-3">
             <label for="formGroupExampleInput2" class="form-label">Miqdori:</label>
@@ -200,77 +205,54 @@
     </div>
   </div>
 </div>
-<div class="modal fade" id="editProduct" tabindex="-1" aria-labelledby="editProductModal" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Tahrirlash</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST">
-          {% csrf_token %}
-          <input type="hidden" value="product_id" name="product" id="product_id">
-          <div class="mb-3">
-            <label for="formGroupExampleInput" class="form-label">Nomi:</label>
-            <input type="text" class="form-control" placeholder="Nomi" name="name" required  id="name">
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Miqdori:</label>
-            <input type="number" class="form-control"  placeholder="Miqdori" name="amount" required  id="amount">
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">O'lchov birligi</label>
-            <select name="measurement_unit" required=True class="form-select" id="measurement_unit">
-                <option value="litr">Litr</option>
-                <option value="tonna">To'nna</option>
-                <option value="dona">Dona</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Sof foyda</label>
-            <input type="number" class="form-control"  placeholder="Sof foyda" name="income"  required id="income">
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Tan narxi</label>
-            <input type="number" class="form-control"  placeholder="Tan narxi" name="body_price"  required id="body_price">
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Limit</label>
-            <input type="number" class="form-control"  placeholder="Limit" name="limit" required id="limit" >
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary" name="save">Saqlash</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', (event) => {
-      const scannerInput = document.getElementById('scannerInput');
-      const qrCodeIdInput = document.getElementById('qrCodeId');
+  let html5QrCode;
+  let scannerActive = false;
 
-      // Listen for input from the hidden input field
-      scannerInput.addEventListener('input', (event) => {
-          const data = event.target.value;
-          if (data) {
-              // Fill the QR Code ID input field
-              qrCodeIdInput.value = data;
+  document.getElementById('startScanButton').addEventListener('click', function() {
+    if (!scannerActive) {
+      html5QrCode = new Html5Qrcode("reader");
 
-              // Open the modal
-              $('#productModal').modal('show');
-
-              // Clear the input field
-              scannerInput.value = '';
-          }
+      html5QrCode.start(
+        { facingMode: "environment" }, // Use rear camera
+        {
+          fps: 10, // Frames per second
+          qrbox: { width: 250, height: 250 } // Size of the scanning box
+        },
+        onScanSuccess,
+        onScanFailure
+      ).catch(err => {
+        console.error(`Error starting scanner: ${err}`);
       });
 
-      // Focus on the hidden input field to capture scanner input
-      scannerInput.focus();
+      document.getElementById('reader').style.display = 'block'; // Show the reader
+      scannerActive = true;
+    }
   });
+
+  function onScanSuccess(decodedText, decodedResult) {
+    // Handle the result here
+    document.getElementById('productID').value = decodedText;
+
+    // Stop scanning after the first successful scan
+    if (scannerActive) {
+      html5QrCode.stop().then(() => {
+        console.log("QR code scanning stopped.");
+        document.getElementById('reader').style.display = 'none'; // Hide the reader
+        scannerActive = false;
+        // Open the modal
+        var scanModal = new bootstrap.Modal(document.getElementById('scanModal'));
+        scanModal.show();
+      }).catch(err => {
+        console.error(`Error stopping scanner: ${err}`);
+      });
+    }
+  }
+
+  function onScanFailure(error) {
+    // Handle scan failure
+    console.error(`Scan error: ${error}`);
+  }
 </script>
 {% endblock content %}
